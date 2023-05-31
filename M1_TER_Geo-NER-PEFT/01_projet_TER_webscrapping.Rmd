@@ -1,0 +1,53 @@
+---
+title: "projet_TER_webscrapping"
+output: html_notebook
+---
+
+```{r}
+# Import librairies
+library(geniusr)
+library(dplyr)
+library(tidytext)
+library(data.table)
+```
+
+```{r}
+# Connect to Genius API with a token
+genius_token(TRUE) 
+```
+
+```{r}
+# Get songs from JuL (artist ID = 74283)
+songs <- get_artist_songs_df(74283)
+
+# Get every song ID
+ids <- c(as.character(songs$song_id))
+print(paste("Number of songs:", length(ids)))
+```
+
+```{r}
+# Create an empty dataframe
+allLyrics <- data.frame()
+
+# Add lyrics to that df
+while (length(ids) > 0) {
+  for (id in ids) {
+    tryCatch({
+      if (dim(get_lyrics_id(id))[1] == 0) {
+        next
+      } else if (dim(get_lyrics_id(id))[1] > 0) {
+        allLyrics <- rbind(get_lyrics_id(id), allLyrics) #add song to df
+        successful <- unique(allLyrics$song_id) #add song ID to a variable named successful
+        ids <- ids[!ids %in% successful] #remove ID from the original list
+        print(paste("done -", id))
+        print(paste("New length is", length(ids)))
+      }
+    }, error = function(e){})
+  }
+}
+```
+
+```{r}
+# Save df to csv file
+fwrite(allLyrics, "allLyrics.csv")
+```
